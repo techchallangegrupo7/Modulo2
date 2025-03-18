@@ -109,11 +109,6 @@ def avaliar_aptidao(horarios):
     penalidades = 0
     professores_horarios = {}  # Mapeia professores para os horários que dão aula
 
-    # 1-Verifica se cada professor tem um dia livre
-    for prof, dias in professores_horarios.items():
-        if prof not in ["Regente-Professor1", "Regente-Professor2"]:  # Excluir os regentes
-            if len(dias) == 5:  # Se o professor tem aulas todos os dias
-                penalidades += 5   # Penalidade por não ter um dia livre
     
     # Dicionário para rastrear a carga horária de cada matéria em todas as turmas
     carga_horaria_geral = {}
@@ -146,6 +141,16 @@ def avaliar_aptidao(horarios):
                         penalidades += 1  # Penalidade para repetição de qualquer matéria nas outras turmas
                     materias_no_dia.add(materia)
 
+                    # # Verificar se o professor está em mais de uma turma no mesmo horário
+                    # if materia not in professores_horarios:
+                    #     professores_horarios[materia] = {}
+                    # if dia_idx not in professores_horarios[materia]:
+                    #     professores_horarios[materia][dia_idx] = set()
+                    # if periodo_idx in professores_horarios[materia][dia_idx]:
+                    #     penalidades += 5  # Penalidade por conflito de horário entre turmas
+                    # else:
+                    #     professores_horarios[materia][dia_idx].add(periodo_idx)
+
 
                     
                     # # Contar aulas por matéria no dia NÃO FUNCIONANDO
@@ -168,7 +173,7 @@ def avaliar_aptidao(horarios):
                     # else:
                     #     professores_horarios[materia][dia_idx].add(periodo_idx)
         
-    # Após processar todas as turmas, verificar excesso de carga horária por matéria no dia
+    # 4- Após processar todas as turmas, verificar excesso de carga horária por matéria no dia
     for turma, horario in horarios.items():
         for dia_idx, dia in enumerate(horario):
             for periodo_idx, materia in enumerate(dia):
@@ -180,11 +185,49 @@ def avaliar_aptidao(horarios):
                         carga_horaria_geral[materia][dia_idx] = 0
                     carga_horaria_geral[materia][dia_idx] += 1
 
-    # Verificar excesso de carga horária por matéria no dia
+    # 4- Verificar excesso de carga horária por matéria no dia
     for materia, dias in carga_horaria_geral.items():
         for dia, total_periodos in dias.items():
             if total_periodos > 4:  # Limite de 4 períodos por dia
                 penalidades += (total_periodos - 4) * 5  # Penalidade para excesso de carga horária
+
+    
+    # 5-Verifica se cada professor tem um dia livre 
+    professores_dias_ocupados = {}  # Dicionário para rastrear os dias ocupados de cada professor
+
+    for turma, horario in horarios.items():
+        for dia_idx, dia in enumerate(horario):
+            for periodo_idx, materia in enumerate(dia):
+                if materia and materia not in ["Regente-Professor1", "Regente-Professor2"]:
+                    # Atualizar os dias ocupados do professor
+                    if materia not in professores_dias_ocupados:
+                        professores_dias_ocupados[materia] = set()
+                    professores_dias_ocupados[materia].add(dia_idx)
+
+    # 5- Verificar se cada professor tem pelo menos um dia livre
+    for professor, dias_ocupados in professores_dias_ocupados.items():
+        total_dias = len(horarios[next(iter(horarios))])  # Total de dias (baseado na primeira turma)
+        if len(dias_ocupados) == total_dias:  # Se o professor está ocupado todos os dias
+            penalidades += 8  # Penalidade para professor sem dia livre
+
+    # # 6- Verificar se o mesmo professor está no mesmo período, no mesmo dia, em turmas diferentes
+    # professores_periodos_ocupados = {}  # Dicionário para rastrear os períodos ocupados de cada professor por dia
+
+    # for turma, horario in horarios.items():
+    #     for dia_idx, dia in enumerate(horario):
+    #         for periodo_idx, materia in enumerate(dia):
+    #             if materia and materia not in ["Regente-Professor1", "Regente-Professor2"]:
+    #                 # Atualizar os períodos ocupados do professor
+    #                 if materia not in professores_periodos_ocupados:
+    #                     professores_periodos_ocupados[materia] = {}
+    #                 if dia_idx not in professores_periodos_ocupados[materia]:
+    #                     professores_periodos_ocupados[materia][dia_idx] = set()
+                    
+    #                 # Verificar se o professor já está alocado no mesmo período em outra turma
+    #                 if periodo_idx in professores_periodos_ocupados[materia][dia_idx]:
+    #                     penalidades += 10  # Penalidade para conflito de horário entre turmas
+    #                 else:
+    #                     professores_periodos_ocupados[materia][dia_idx].add(periodo_idx)
 
     # Regras específicas para Educação Física, podem dividir a quadra um dia.
     for dia in range(5):
@@ -261,12 +304,6 @@ def avaliar_aptidao(horarios):
 
  
 
-
-    # # Verifica se cada professor tem um dia livre
-    # for prof, dias in professores_horarios.items():
-    #     if prof not in ["Regente-Professor1", "Regente-Professor2"]:  # Excluir os regentes
-    #         if len(dias) == 5:  # Se o professor tem aulas todos os dias
-    #             penalidades += 5  # Penalidade por não ter um dia livre
     
     return penalidades
 
@@ -316,7 +353,7 @@ def mutacao(horarios):
 def algoritmo_genetico():
     # Parâmetros do algoritmo genético
     num_geracoes = 1000
-    num_individuos = 300
+    num_individuos = 500
     probabilidade_mutacao = 0.1
     taxa_elitismo = 0.3
 
