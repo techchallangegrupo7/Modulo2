@@ -352,8 +352,8 @@ def mutacao(horarios):
 # Algoritmo Genético para gerar o horário
 def algoritmo_genetico():
     # Parâmetros do algoritmo genético
-    num_geracoes = 1000
-    num_individuos = 500
+    num_geracoes = 1300
+    num_individuos = 300
     probabilidade_mutacao = 0.1
     taxa_elitismo = 0.3
 
