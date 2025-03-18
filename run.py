@@ -115,7 +115,9 @@ def avaliar_aptidao(horarios):
             if len(dias) == 5:  # Se o professor tem aulas todos os dias
                 penalidades += 5   # Penalidade por não ter um dia livre
     
-    
+    # Dicionário para rastrear a carga horária de cada matéria em todas as turmas
+    carga_horaria_geral = {}
+
     for turma, horario in horarios.items():
         # 2-Regra referente à carga horária da matéria
         carga_horaria_gerada = {}
@@ -144,14 +146,17 @@ def avaliar_aptidao(horarios):
                         penalidades += 1  # Penalidade para repetição de qualquer matéria nas outras turmas
                     materias_no_dia.add(materia)
 
-                    # Contar aulas por matéria no dia NÃO FUNCIONANDO
-                    if materia not in carga_horaria_dia:
-                        carga_horaria_dia[materia] = set()
-                    carga_horaria_dia[materia].add(periodo_idx)
 
-                    # Penalizar se a matéria exceder 4 aulas no dia
-                    if len(carga_horaria_dia[materia]) > 4:
-                        penalidades += (len(carga_horaria_dia[materia]) - 4) * 5
+                    
+                    # # Contar aulas por matéria no dia NÃO FUNCIONANDO
+                    # if materia not in carga_horaria_dia:
+                    #     carga_horaria_dia[materia] = set()
+                    # carga_horaria_dia[materia].add(periodo_idx)
+
+                    # # Penalizar se a matéria exceder 4 aulas no dia NÃO FUNCIONANDO
+                    # if len(carga_horaria_dia[materia]) > 4:
+                    #     print(f"{carga_horaria_dia[materia]} da matéria: {materia}")
+                    #     penalidades += (len(carga_horaria_dia[materia]) - 4) * 5
 
                     # # Verificar se o professor está em mais de uma turma no mesmo horário
                     # if materia not in professores_horarios:
@@ -162,6 +167,24 @@ def avaliar_aptidao(horarios):
                     #     penalidades += 4  # Penalidade por conflito de horário entre turmas
                     # else:
                     #     professores_horarios[materia][dia_idx].add(periodo_idx)
+        
+    # Após processar todas as turmas, verificar excesso de carga horária por matéria no dia
+    for turma, horario in horarios.items():
+        for dia_idx, dia in enumerate(horario):
+            for periodo_idx, materia in enumerate(dia):
+                if materia:
+                    # Atualizar a carga horária geral da matéria
+                    if materia not in carga_horaria_geral:
+                        carga_horaria_geral[materia] = {}
+                    if dia_idx not in carga_horaria_geral[materia]:
+                        carga_horaria_geral[materia][dia_idx] = 0
+                    carga_horaria_geral[materia][dia_idx] += 1
+
+    # Verificar excesso de carga horária por matéria no dia
+    for materia, dias in carga_horaria_geral.items():
+        for dia, total_periodos in dias.items():
+            if total_periodos > 4:  # Limite de 4 períodos por dia
+                penalidades += (total_periodos - 4) * 5  # Penalidade para excesso de carga horária
 
     # Regras específicas para Educação Física, podem dividir a quadra um dia.
     for dia in range(5):
