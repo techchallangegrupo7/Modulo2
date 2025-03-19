@@ -25,29 +25,55 @@ def introduzir_diversidade_com_mutacao(populacao, proporcao=0.3):
         populacao[i] = (mutacao(populacao[i][0]), avaliar_aptidao(populacao[i][0]))
     return populacao
 
+# def salvar_horarios_em_excel(horarios):
+#     """
+#     Salva os horários gerados em um arquivo Excel, incluindo a contagem de cada matéria na semana.
+#     """
+#     with pd.ExcelWriter(f"horarios_turmas_{time.time()}.xlsx") as writer:
+#         for turma, dias in horarios.items():
+#             # Transpor os dados: dias da semana como colunas
+#             df = pd.DataFrame(dias).T
+#             df.columns = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"]
+#             df.index = ["1º Horário", "2º Horário", "3º Horário", "4º Horário"]
+            
+#             # Contar a frequência de cada matéria na semana
+#             todas_materias = [materia for dia in dias for materia in dia]
+#             contagem_materias = pd.DataFrame(
+#                 {"Matéria": list(set(todas_materias)), 
+#                  "Frequência": [todas_materias.count(materia) for materia in set(todas_materias)]}
+#             )
+            
+#             # Escrever o DataFrame de horários em uma aba do Excel
+#             df.to_excel(writer, sheet_name=turma, startrow=0)
+            
+#             # Escrever a contagem de matérias abaixo da tabela de horários
+#             contagem_materias.to_excel(writer, sheet_name=turma, startrow=len(df) + 3, index=False)
+    
+#     print("Planilha Excel gerada com sucesso!")
+
+
 def salvar_horarios_em_excel(horarios):
     """
-    Salva os horários gerados em um arquivo Excel, incluindo a contagem de cada matéria na semana.
+    Salva os horários gerados em um único arquivo Excel, com todas as turmas em uma aba.
     """
     with pd.ExcelWriter(f"horarios_turmas_{time.time()}.xlsx") as writer:
+        dados_planilha = []
+        
         for turma, dias in horarios.items():
-            # Transpor os dados: dias da semana como colunas
-            df = pd.DataFrame(dias).T
-            df.columns = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"]
-            df.index = ["1º Horário", "2º Horário", "3º Horário", "4º Horário"]
-            
-            # Contar a frequência de cada matéria na semana
-            todas_materias = [materia for dia in dias for materia in dia]
-            contagem_materias = pd.DataFrame(
-                {"Matéria": list(set(todas_materias)), 
-                 "Frequência": [todas_materias.count(materia) for materia in set(todas_materias)]}
-            )
-            
-            # Escrever o DataFrame de horários em uma aba do Excel
-            df.to_excel(writer, sheet_name=turma, startrow=0)
-            
-            # Escrever a contagem de matérias abaixo da tabela de horários
-            contagem_materias.to_excel(writer, sheet_name=turma, startrow=len(df) + 3, index=False)
+            # Adicionar nome da turma como uma linha separadora
+            dados_planilha.append([turma] + [""] * 4)
+            # Adicionar cabeçalho dos dias da semana
+            dados_planilha.append(["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"])
+            # Adicionar os horários
+            for horario in range(4):  # Supondo 4 períodos por dia
+                linha = [dias[dia_idx][horario] for dia_idx in range(5)]  # Iterar sobre os dias (0 a 4)
+                dados_planilha.append(linha)
+            # Linha em branco para separar as turmas
+            # dados_planilha.append([""] * 5)
+        
+        # Criar DataFrame e salvar no Excel
+        df_final = pd.DataFrame(dados_planilha)
+        df_final.to_excel(writer, sheet_name="Horários", index=False, header=False)
     
     print("Planilha Excel gerada com sucesso!")
 
@@ -89,13 +115,12 @@ def gerar_horarios_todas_turmas():
 
     return horarios_turmas
 
-
-
 def avaliar_aptidao(horarios):
     penalidades = 0
        
     # Dicionário para rastrear a carga horária de cada matéria em todas as turmas
     carga_horaria_geral = {}
+
 
     for turma, horario in horarios.items():
         # 1- Carga horária da matéria sendo cumprida por turmas
@@ -126,8 +151,6 @@ def avaliar_aptidao(horarios):
                     materias_no_dia.add(materia)
 
 
-                    
-        
     # 3- Após processar todas as turmas, verificar excesso de carga horária por matéria no dia
     for turma, horario in horarios.items():
         for dia_idx, dia in enumerate(horario):
@@ -146,7 +169,18 @@ def avaliar_aptidao(horarios):
             if total_periodos > 4:  # Limite de 4 períodos por dia
                 penalidades += (total_periodos - 4) * 5  # Penalidade para excesso de carga horária
 
-    
+    # 4- Verificar se a mesma matéria está alocada no mesmo horário em turmas diferentes
+    horarios_por_periodo = {}  # Dicionário para mapear (dia, período) para matérias
+
+    for turma, horario in horarios.items():
+        for dia_idx, dia in enumerate(horario):
+            for periodo_idx, materia in enumerate(dia):
+                if materia:
+                    if (dia_idx, periodo_idx) not in horarios_por_periodo:
+                        horarios_por_periodo[(dia_idx, periodo_idx)] = set()
+                    if materia in horarios_por_periodo[(dia_idx, periodo_idx)]:
+                        penalidades += 3  # Penalidade por conflito de horários
+                    horarios_por_periodo[(dia_idx, periodo_idx)].add(materia)
     
     return penalidades
 
@@ -195,10 +229,11 @@ def mutacao(horarios):
 # Algoritmo Genético para gerar o horário
 def algoritmo_genetico():
     # Parâmetros do algoritmo genético
-    num_geracoes = 1000
-    num_individuos = 300
-    probabilidade_mutacao = 0.1
-    taxa_elitismo = 0.3
+    num_geracoes = 1300
+    num_individuos = 800
+    probabilidade_mutacao = 0.2
+    taxa_elitismo = 0.4
+    proporcao_divsersidade_mudacao=0.3
 
     # Geração de população inicial
     print("começou gerar horario turmas")
@@ -217,7 +252,7 @@ def algoritmo_genetico():
         if estagnacao >= 10:
             probabilidade_mutacao = min(1.0, probabilidade_mutacao + 0.1)
         else:
-            probabilidade_mutacao = 0.1
+            probabilidade_mutacao = 0.2
 
         # Seleção dos pais
         # pais = selecao_por_torneio(populacao, num_individuos, tamanho_torneio=5)
@@ -247,7 +282,7 @@ def algoritmo_genetico():
         ####Introduzir diversidade se necessário
         if estagnacao >= 10:
             print("Reiniciando parte da população com maior diversidade...")
-            populacao = introduzir_diversidade_com_mutacao(populacao, proporcao=0.1)
+            populacao = introduzir_diversidade_com_mutacao(populacao, proporcao_divsersidade_mudacao)
             estagnacao = 0
 
         # Melhor indivíduo da geração
