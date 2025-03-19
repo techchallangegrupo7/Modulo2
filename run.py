@@ -1,6 +1,9 @@
 import random
 import time
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font, Border, Side
+import os
 
 ###Definindo as turmas e as matérias com suas respectivas cargas horárias
 turmas= {
@@ -25,57 +28,90 @@ def introduzir_diversidade_com_mutacao(populacao, proporcao=0.3):
         populacao[i] = (mutacao(populacao[i][0]), avaliar_aptidao(populacao[i][0]))
     return populacao
 
-# def salvar_horarios_em_excel(horarios):
-#     """
-#     Salva os horários gerados em um arquivo Excel, incluindo a contagem de cada matéria na semana.
-#     """
-#     with pd.ExcelWriter(f"horarios_turmas_{time.time()}.xlsx") as writer:
-#         for turma, dias in horarios.items():
-#             # Transpor os dados: dias da semana como colunas
-#             df = pd.DataFrame(dias).T
-#             df.columns = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"]
-#             df.index = ["1º Horário", "2º Horário", "3º Horário", "4º Horário"]
-            
-#             # Contar a frequência de cada matéria na semana
-#             todas_materias = [materia for dia in dias for materia in dia]
-#             contagem_materias = pd.DataFrame(
-#                 {"Matéria": list(set(todas_materias)), 
-#                  "Frequência": [todas_materias.count(materia) for materia in set(todas_materias)]}
-#             )
-            
-#             # Escrever o DataFrame de horários em uma aba do Excel
-#             df.to_excel(writer, sheet_name=turma, startrow=0)
-            
-#             # Escrever a contagem de matérias abaixo da tabela de horários
-#             contagem_materias.to_excel(writer, sheet_name=turma, startrow=len(df) + 3, index=False)
-    
-#     print("Planilha Excel gerada com sucesso!")
-
-
 def salvar_horarios_em_excel(horarios):
     """
     Salva os horários gerados em um único arquivo Excel, com todas as turmas em uma aba.
     """
-    with pd.ExcelWriter(f"horarios_turmas_{time.time()}.xlsx") as writer:
+    # Mapeamento de cores para as matérias
+    cores_materias = {
+        "Artes": "FFC0CB",  # Rosa
+        "Educação Física-Professor1": "AFB87A",  # Verde Oliva
+        "Educação Física-Professor2": "87CEEB",  # Azul céu
+        "Inglês": "FFFFE0",  # Amarelo claro
+        "Regente-Professor1": "98FB98",  # Verde claro
+        "Regente-Professor2": "90EE90",  # Verde pálido
+        "Ciências-Professor1": "FFA07A",  # Salmão claro
+        "Ciências-Professor2": "FA8072",  # Salmão
+        "Ensino Religioso": "DDA0DD",  # Ameixa
+        "Geografia": "FFD700",  # Ouro
+        "História": "FFB6C1",  # Rosa claro
+        "Matemática-Professor1": "00FA9A",  # Verde médio
+        "Matemática-Professor2": "7CFC00",  # Verde grama
+        "Português-Professor1": "FF6347",  # Tomate
+        "Português-Professor2": "FF4500",  # Laranja vermelho
+    }
+
+    # Obter o diretório do script em execução
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_name = os.path.join(current_dir, f"horarios_turmas_{time.time()}.xlsx")    
+
+    with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
         dados_planilha = []
-        
+
         for turma, dias in horarios.items():
             # Adicionar nome da turma como uma linha separadora
-            dados_planilha.append([turma] + [""] * 4)
+            dados_planilha.append([turma] + [""] * 5)
+
             # Adicionar cabeçalho dos dias da semana
-            dados_planilha.append(["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"])
+            dados_planilha.append(["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Horário"])
+
             # Adicionar os horários
             for horario in range(4):  # Supondo 4 períodos por dia
-                linha = [dias[dia_idx][horario] for dia_idx in range(5)]  # Iterar sobre os dias (0 a 4)
+                linha = [dias[dia_idx][horario] for dia_idx in range(5)] + [f"{horario + 1}º Horário"]
                 dados_planilha.append(linha)
-            # Linha em branco para separar as turmas
-            # dados_planilha.append([""] * 5)
-        
+
         # Criar DataFrame e salvar no Excel
         df_final = pd.DataFrame(dados_planilha)
         df_final.to_excel(writer, sheet_name="Horários", index=False, header=False)
-    
+
+    # Abrir o arquivo gerado para aplicar estilos
+    wb = load_workbook(file_name)
+    ws = wb.active
+
+    # Estilo para colorir as linhas
+    azul_fill = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")
+    bold_font = Font(bold=True)
+
+        # Estilo de borda
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    for i, row in enumerate(ws.iter_rows()):
+        for cell in row:
+            if cell.value:  # Aplicar borda apenas em células com valor
+                cell.border = thin_border
+        if row[0].value and row[0].value in horarios.keys():  # Linha com o nome da turma
+            for cell in row:
+                cell.fill = azul_fill
+                cell.font = bold_font
+            # Aplicar o mesmo estilo à próxima linha (dias da semana)
+            for cell in ws[i + 2]:  # A linha dos dias da semana está logo após a linha da turma
+                cell.fill = azul_fill
+                cell.font = bold_font
+        else:
+            # Aplicar cores às matérias
+            for cell in row:
+                if cell.value in cores_materias:
+                    cell.fill = PatternFill(start_color=cores_materias[cell.value], end_color=cores_materias[cell.value], fill_type="solid")
+
+    # Salvar o arquivo com os estilos aplicados
+    wb.save(file_name)
     print("Planilha Excel gerada com sucesso!")
+
 
 def gerar_horarios_turmas(carga_horaria):
     horario = [[None] * 4 for _ in range(5)]  # 5 dias, 4 períodos por dia
