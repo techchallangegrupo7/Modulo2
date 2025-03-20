@@ -19,8 +19,33 @@ turmas= {
     "9B": {"Artes": 1, "Ciências-Professor2": 3, "Educação Física-Professor2": 2, "Ensino Religioso": 1, "Geografia": 2, "História": 2, "Inglês": 2, "Matemática-Professor2": 4, "Português-Professor2": 3}
 }
 
+
 # turmas= turmaExterno.balanceamento_professores_materia()
 print(f"turmas:  {turmas}")
+
+def gerar_horarios_todas_turmas_contador(num_individuos):
+    for i in range(num_individuos):
+        numero_individuo = num_individuos - i
+        print(f"Indivíduo: {numero_individuo} criado.")
+        yield gerar_horarios_todas_turmas()
+
+# Gera os horários para todas as turmas
+def gerar_horarios_todas_turmas():   
+    def verificar_alocacao(horario, carga_horaria, turma):
+        """Verifica se todas as matérias foram alocadas corretamente."""
+        alocadas = [materia for dia in horario for materia in dia if materia]
+        for materia, carga in carga_horaria.items():
+            if alocadas.count(materia) != carga:
+                print(f"Erro: A matéria {materia} não foi completamente alocada na turma {turma}.") 
+
+    horarios_turmas = {}
+
+    for turma, carga_horaria in turmas.items():
+        horarios_turmas[turma] = gerar_horarios_turmas(carga_horaria)    
+         
+    verificar_alocacao(horarios_turmas[turma], carga_horaria, turma)
+    
+    return horarios_turmas
 
 def introduzir_diversidade_com_mutacao(populacao, proporcao=0.3):
     num_mutacoes = int(len(populacao) * proporcao)
@@ -34,12 +59,12 @@ def salvar_horarios_em_excel(horarios):
     """
     # Mapeamento de cores para as matérias
     cores_materias = {
-        "Artes": "FFC0CB",  # Rosa
+        "Artes": "C17DA5",  #  magenta suave
         "Educação Física-Professor1": "AFB87A",  # Verde Oliva
         "Educação Física-Professor2": "87CEEB",  # Azul céu
         "Inglês": "FFFFE0",  # Amarelo claro
         "Regente-Professor1": "98FB98",  # Verde claro
-        "Regente-Professor2": "90EE90",  # Verde pálido
+        "Regente-Professor2": "9CA4EC",  # azul claro com um toque de lavanda
         "Ciências-Professor1": "FFA07A",  # Salmão claro
         "Ciências-Professor2": "FA8072",  # Salmão
         "Ensino Religioso": "DDA0DD",  # Ameixa
@@ -113,25 +138,70 @@ def salvar_horarios_em_excel(horarios):
     print("Planilha Excel gerada com sucesso!")
 
 
-def gerar_horarios_turmas(carga_horaria):
-    horario = [[None] * 4 for _ in range(5)]  # 5 dias, 4 períodos por dia
-    materias = []
+def gerar_horarios_turmas(carga_horaria):    
+    horario = [[None] * 4 for _ in range(5)]  # 5 dias, 4 períodos por dia       
+    materias_com_peso = []    
+    materias_adicionadas_turma = {materia: set() for materia in carga_horaria.keys()}  # Inicializa como dicionário de conjuntos
+    horarios_ocupados = set()  # Conjunto para armazenar (dia, periodo) já ocupados
+    horarios_disponiveis = [(dia, periodo) for dia in range(5) for periodo in range(4)]  # Todos os horários possíveis
 
-    # Cria uma lista de matérias com base na carga horária
-    for materia, carga in carga_horaria.items():
-        materias.extend([materia] * carga)
+    # Cria a lista de matérias com peso
+    for materia, peso in carga_horaria.items():
+        materias_com_peso.append({"materia": materia, "peso": peso})
 
-    random.shuffle(materias)  # Embaralha as matérias
+    # Ordena as matérias com base no peso em ordem decrescente
+    materias_com_peso.sort(key=lambda x: x["peso"], reverse=True)
 
     # Distribui as matérias
-    for materia in materias:
-        alocado = False
-        while not alocado:
-            dia = random.randint(0, 4)  # Escolhe um dia aleatório
-            periodo = random.randint(0, 3)  # Escolhe um período aleatório
-            if horario[dia][periodo] is None:  # Verifica se o horário está vazio
-                horario[dia][periodo] = materia
-                alocado = True
+    for materia_info in materias_com_peso:
+        materia = materia_info["materia"]
+        peso = materia_info["peso"]
+        for _ in range(peso):
+            alocado = False
+            # Atualiza os horários livres removendo os ocupados
+            horarios_livres = [h for h in horarios_disponiveis if h not in horarios_ocupados]
+
+            while not alocado:
+                if not horarios_livres:
+                    raise ValueError("Não há horários livres suficientes para alocar todas as matérias.")
+                
+                # Escolhe um horário aleatório dos horários livres
+                dia, periodo = random.choice(horarios_livres)
+                # carga_horaria_semanal_materia = len(materias_adicionadas_turma[materia])
+
+                # Verifica se o horário está vazio e se a matéria pode ser alocada nesse dia
+                if materia in ["Regente-Professor1", "Regente-Professor2"] or dia not in materias_adicionadas_turma[materia]:                 
+                    horario[dia][periodo] = materia
+                    materias_adicionadas_turma[materia].add(dia)                    
+                    horarios_ocupados.add((dia, periodo))  # Marca o horário como ocupado
+                    alocado = True                    
+                else:
+                    dias_alocados = materias_adicionadas_turma.get(materia, set()) 
+                    dias_disponiveis = {dia for dia, _ in horarios_livres}
+                    
+                    # Verifica os dias disponíveis que não estão nos dias já alocados
+                    dias_diferentes = dias_disponiveis - dias_alocados
+                    
+                    if not dias_diferentes:                                                           
+                        # Escolhe uma matéria aleatória já alocada para desalocar
+                        materia_para_desalocar = random.choice(list(materias_adicionadas_turma.keys()))
+                        if materias_adicionadas_turma[materia_para_desalocar]:
+                            dia_para_remover = materias_adicionadas_turma[materia_para_desalocar].pop()
+                            
+                            # Encontra o período correspondente e remove a matéria do horário
+                            for periodo_idx in range(4):
+                                if horario[dia_para_remover][periodo_idx] == materia_para_desalocar:
+                                    horario[dia_para_remover][periodo_idx] = None
+                                    horarios_ocupados.remove((dia_para_remover, periodo_idx))
+                                    break
+                            
+                            # Adiciona o peso de volta para a matéria desalocada
+                            for materia_info in materias_com_peso:
+                                if materia_info["materia"] == materia_para_desalocar:
+                                    materia_info["peso"] += 1
+                                    break
+                        else:
+                            alocado = False
 
     return horario
 
@@ -220,7 +290,6 @@ def avaliar_aptidao(horarios):
     
     return penalidades
 
-
 # Seleção por ranking
 def selecao_por_ranking(populacao, num_individuos):
     # Ordenar a população pela aptidão (menor penalidade primeiro)
@@ -267,13 +336,12 @@ def algoritmo_genetico():
     # Parâmetros do algoritmo genético
     num_geracoes = 1300
     num_individuos = 800
-    probabilidade_mutacao = 0.2
-    taxa_elitismo = 0.4
+    taxa_elitismo = 0.3
     proporcao_divsersidade_mudacao=0.3
 
     # Geração de população inicial
     print("começou gerar horario turmas")
-    populacao = [(gerar_horarios_todas_turmas(), 0) for _ in range(num_individuos)]  # Aumenta a população inicial
+    populacao = [(horario, 0) for horario in gerar_horarios_todas_turmas_contador(num_individuos)]
     print("finalizou gerar horario turmas")
 
     # Avaliar aptidão de cada indivíduo na população
@@ -285,8 +353,8 @@ def algoritmo_genetico():
 
     for geracao in range(num_geracoes):
         # # # Ajustar a taxa de mutação dinamicamente
-        if estagnacao >= 10:
-            probabilidade_mutacao = min(1.0, probabilidade_mutacao + 0.1)
+        if estagnacao >= 6:
+            probabilidade_mutacao = min(1.0, probabilidade_mutacao + 0.2)
         else:
             probabilidade_mutacao = 0.2
 
@@ -315,15 +383,15 @@ def algoritmo_genetico():
         elite = populacao[:int(len(populacao) * taxa_elitismo)]
         populacao = elite + filhos
 
-        ####Introduzir diversidade se necessário
-        if estagnacao >= 10:
+        ###Introduzir diversidade se necessário
+        if estagnacao >= 15:
             print("Reiniciando parte da população com maior diversidade...")
             populacao = introduzir_diversidade_com_mutacao(populacao, proporcao_divsersidade_mudacao)
             estagnacao = 0
 
         # Melhor indivíduo da geração
         melhor_individuo = min(populacao, key=lambda x: x[1])
-        print(f"Geração {geracao + 1}: Penalidade = {melhor_individuo[1]}")
+        print(f"Geração {geracao + 1}: Penalidade = {melhor_individuo[1]} Probabilidade de mutação: {probabilidade_mutacao} ")
 
         # Verificar estagnação
         if melhor_individuo[1] < melhor_penalidade_anterior:
