@@ -2,12 +2,18 @@
 
 Este projeto utiliza um algoritmo para gerar horários escolares otimizados, distribuindo matérias entre turmas e respeitando restrições de carga horária e distribuição ao longo da semana.
 
+ 1 - Carga horária da matéria sendo cumprida por turmas
+ 2 - Matérias que não sejam Regente-Professor1 e Regente-Professor2 não podem repetir no mesmo dia para mesma turma
+ 3 - Verificar excesso de carga horária por matéria no dia, não exceder 4 horários diários
+ 4-  Verificar se a mesma matéria está alocada no mesmo horário em turmas diferentes
+
 ## 📌 Funcionalidades
 
 - *Geração de horários*: Distribui matérias respeitando as cargas horárias definidas para cada turma.
 - *Verificação de alocação*: Garante que todas as matérias tenham o número correto de aulas.
 - *Mutação para diversidade*: Introduz variações no planejamento para otimização.
 - *Exportação para Excel*: Salva os horários em uma planilha colorida, facilitando a visualização.
+- *
 
 ## 🚀 Como Usar
 
@@ -121,13 +127,6 @@ Com uma aba contendo:
 
 ---
 
-## 🔧 Melhorias Futuras
-
-- Aplicação de Algoritmo Genético para otimização.
-- Interface gráfica para configuração de horários.
-- Validações adicionais para regras específicas de professores.
-
----
 
 ## 📌 Conclusão
 
