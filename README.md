@@ -13,7 +13,7 @@ Este projeto utiliza um algoritmo para gerar horários escolares otimizados, dis
 - *Verificação de alocação*: Garante que todas as matérias tenham o número correto de aulas.
 - *Mutação para diversidade*: Introduz variações no planejamento para otimização.
 - *Exportação para Excel*: Salva os horários em uma planilha colorida, facilitando a visualização.
-- *
+- *Geração do gráfico para acompanhar o desenvolvimento da população x geração.
 
 ## 🚀 Como Usar
 
