@@ -23,7 +23,7 @@ Este projeto utiliza um algoritmo para gerar horários escolares otimizados, dis
    
 2. Execute o script principal:
    sh
-   python script.py
+   python run.py
    
 3. O arquivo Excel será gerado no mesmo diretório.
 
