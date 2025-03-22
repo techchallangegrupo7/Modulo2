@@ -1,6 +1,7 @@
 import random
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font, Border, Side
 import os
@@ -19,6 +20,24 @@ turmas= {
     "9B": {"Artes": 1, "Ciências-Professor2": 3, "Educação Física-Professor2": 2, "Ensino Religioso": 1, "Geografia": 2, "História": 2, "Inglês": 2, "Matemática-Professor2": 4, "Português-Professor2": 3}
 }
 
+#Função para configurar e atualizar o gráfico
+def configurar_grafico():
+    plt.ion()  # Ativar modo interativo
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Geração")
+    ax.set_ylabel("Penalidade")
+    ax.set_title("Penalidades x Geração")
+    linha, = ax.plot([], [], 'b-', label="Melhor Penalidade")
+    ax.legend()
+    return fig, ax, linha
+
+def atualizar_grafico(fig, ax, linha, geracoes, penalidades):
+    linha.set_xdata(geracoes)
+    linha.set_ydata(penalidades)
+    ax.relim()  # Recalcular limites
+    ax.autoscale_view()  # Ajustar escala automaticamente
+    plt.draw()
+    plt.pause(0.01)  # Pausar para atualizar o gráfico
 
 # turmas= turmaExterno.balanceamento_professores_materia()
 print(f"turmas:  {turmas}")
@@ -77,7 +96,10 @@ def salvar_horarios_em_excel(horarios):
     }
 
     # Obter o diretório do script em execução
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if '__file__' in globals():
+         current_dir = os.path.dirname(os.path.abspath(__file__))
+    else:
+        current_dir = os.getcwd()  
     file_name = os.path.join(current_dir, f"horarios_turmas_{time.time()}.xlsx")    
 
     with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
@@ -205,22 +227,6 @@ def gerar_horarios_turmas(carga_horaria):
 
     return horario
 
-# Gera os horários para todas as turmas
-def gerar_horarios_todas_turmas():   
-    def verificar_alocacao(horario, carga_horaria, turma):
-        """Verifica se todas as matérias foram alocadas corretamente."""
-        alocadas = [materia for dia in horario for materia in dia if materia]
-        for materia, carga in carga_horaria.items():
-            if alocadas.count(materia) != carga:
-                print(f"Erro: A matéria {materia} não foi completamente alocada na turma {turma}.") 
-
-    horarios_turmas = {}
-    for turma, carga_horaria in turmas.items():
-        horarios_turmas[turma] = gerar_horarios_turmas(carga_horaria)
-    verificar_alocacao(horarios_turmas[turma], carga_horaria, turma)
-
-    return horarios_turmas
-
 def avaliar_aptidao(horarios):
     penalidades = 0
        
@@ -338,6 +344,11 @@ def algoritmo_genetico():
     num_individuos = 800
     taxa_elitismo = 0.3
     proporcao_divsersidade_mudacao=0.3
+    
+	# Configurar gráfico
+    fig, ax, linha = configurar_grafico()
+    geracoes = []
+    penalidades = []
 
     # Geração de população inicial
     print("começou gerar horario turmas")
@@ -393,6 +404,11 @@ def algoritmo_genetico():
         melhor_individuo = min(populacao, key=lambda x: x[1])
         print(f"Geração {geracao + 1}: Penalidade = {melhor_individuo[1]} Probabilidade de mutação: {probabilidade_mutacao} ")
 
+        #Atualizar Gráfico
+        geracoes.append(geracao + 1)
+        penalidades.append(melhor_individuo[1])
+        atualizar_grafico(fig, ax, linha, geracoes, penalidades)
+		
         # Verificar estagnação
         if melhor_individuo[1] < melhor_penalidade_anterior:
             melhor_penalidade_anterior = melhor_individuo[1]
@@ -405,12 +421,35 @@ def algoritmo_genetico():
             salvar_horarios_em_excel(melhor_individuo[0])
             break
 
+def format_time(timestamp):
+    """Formata um timestamp no formato HH:MM:SS."""
+    return time.strftime("%H:%M:%S", time.localtime(timestamp))
 
-# Executar o algoritmo genético
-start_time = time.time()
-start_time_formatted = time.strftime("%H:%M:%S", time.localtime(start_time))
-print(f"Tempo total inicial: {start_time_formatted}")
-algoritmo_genetico()
-end_time = time.time()
-end_time_formatted = time.strftime("%H:%M:%S", time.localtime(end_time))
-print(f"Tempo total final: {end_time_formatted}")
+def print_time(label, timestamp):
+    """Imprime um timestamp formatado com um rótulo."""
+    formatted_time = format_time(timestamp)
+    print(f"{label}: {formatted_time}")
+
+def run_algorithm(algorithm):
+    """Executa um algoritmo e imprime o tempo inicial, final e o tempo total de execução."""
+    start_time = time.time()
+    print_time("Tempo inicial", start_time)
+    
+    algorithm()  # Executa o algoritmo passado como parâmetro
+    
+    end_time = time.time()
+    print_time("Tempo final", end_time)
+    
+    # Calcula e imprime o tempo total de execução
+    execution_time = end_time - start_time
+    print(f"Tempo total de execução: {execution_time:.2f} segundos")
+
+def main():
+    print("Iniciando execução do algoritmo genético.")
+    run_algorithm(algoritmo_genetico)
+    print("Execução concluída.")
+
+if __name__ == "__main__":
+    main()
+    plt.ioff()     
+    plt.show()
