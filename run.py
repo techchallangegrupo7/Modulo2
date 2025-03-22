@@ -363,14 +363,7 @@ def algoritmo_genetico():
     estagnacao = 0  # Inicializar antes do loop
 
     for geracao in range(num_geracoes):
-        # # # Ajustar a taxa de mutação dinamicamente
-        if estagnacao >= 6:
-            probabilidade_mutacao = min(1.0, probabilidade_mutacao + 0.2)
-        else:
-            probabilidade_mutacao = 0.2
-
-        # Seleção dos pais
-        # pais = selecao_por_torneio(populacao, num_individuos, tamanho_torneio=5)
+        # Seleção dos pais        
         pais = selecao_por_ranking(populacao, num_individuos)
 
         # Cruzamento dos pais para gerar filhos
@@ -382,6 +375,12 @@ def algoritmo_genetico():
         if len(pais) % 2 != 0:
             filhos.append(pais[-1])
 
+        # # # Ajustar a taxa de mutação dinamicamente
+        if estagnacao >= 6:
+            probabilidade_mutacao = min(1.0, probabilidade_mutacao + 0.2)
+        else:
+            probabilidade_mutacao = 0.2
+
         # Mutação dos filhos
         for filho in filhos:
             if random.random() < probabilidade_mutacao:
@@ -391,7 +390,7 @@ def algoritmo_genetico():
         filhos = [(filho, avaliar_aptidao(filho)) for filho in filhos]
 
         # # Preservar a elite
-        elite = populacao[:int(len(populacao) * taxa_elitismo)]
+        elite = populacao[:int(len(populacao) * taxa_elitismo)]  #taxa elitismo 30%
         populacao = elite + filhos
 
         ###Introduzir diversidade se necessário
