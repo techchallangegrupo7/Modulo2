@@ -8,7 +8,7 @@ Este projeto utiliza um algoritmo para gerar horários escolares otimizados, dis
  
  3 - Verificar excesso de carga horária por matéria no dia, não exceder 4 horários diários
  
- 4-  Verificar se a mesma matéria está alocada no mesmo horário em turmas diferentes
+ 4 -  Verificar se a mesma matéria está alocada no mesmo horário em turmas diferentes
 
 ## 📌 Funcionalidades
 
