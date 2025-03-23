@@ -22,13 +22,15 @@ Este projeto utiliza um algoritmo para gerar horários escolares otimizados, dis
 
 1. Instale as dependências:
    sh
+   
    pip install pandas openpyxl
    
-2. Execute o script principal:
+3. Execute o script principal:
    sh
+   
    python run.py
    
-3. O arquivo Excel será gerado no mesmo diretório.
+5. O arquivo Excel será gerado no mesmo diretório.
 
 ---
 
