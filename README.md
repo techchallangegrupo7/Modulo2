@@ -21,11 +21,13 @@ Este projeto utiliza um algoritmo para gerar horários escolares otimizados, dis
 ## 🚀 Como Usar
 
 1. Instale as dependências:
+
    sh
    
    pip install pandas openpyxl
    
 3. Execute o script principal:
+
    sh
    
    python run.py
